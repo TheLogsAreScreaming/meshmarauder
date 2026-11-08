@@ -46,7 +46,7 @@ test('connectWithRetry gives up after the attempt budget and throws the last err
 test('main wires the user-initiated connect through connectWithRetry for both transports',()=>{
  const main=read('main.cjs');
  assert.match(main,/connectWithRetry\(\(\)=>next\.connect\(safe\),\{attempts:3\}\)/);
- assert.equal((main.match(/connectWithRetry\(/g)||[]).length,2); // TCP and USB
- // The unexpected-drop handler (manual reconnect) is preserved for both transports.
- assert.equal((main.match(/if\(state==='disconnected'&&transport===next\)\{if\(session\)\{session\.close\(\);session=null;\}transport=null;\}/g)||[]).length,2);
+ assert.equal((main.match(/connectWithRetry\(/g)||[]).length,3); // TCP, USB and BLE
+ // The unexpected-drop handler (manual reconnect) is preserved for every transport.
+ assert.equal((main.match(/if\(state==='disconnected'&&transport===next\)\{if\(session\)\{session\.close\(\);session=null;\}transport=null;\}/g)||[]).length,3);
 });

@@ -103,10 +103,21 @@
             <div class="card-head">
               <span class="card-icon" aria-hidden="true"><svg class="ico-sm" viewBox="0 0 24 24"><path d="M7 7l10 10-5 4V3l5 4L7 17"/></svg></span>
               <h3>Bluetooth LE</h3>
+              <span class="badge">Experimental</span>
             </div>
-            <p class="card-desc">Discover and select an authorized nearby Meshtastic device.</p>
-            <span class="status">Not connected</span>
-            <p class="card-help">Bluetooth support is under active development and is not yet available.</p>
+            <p class="card-desc">Discover and select an authorized nearby Meshtastic device over Bluetooth Low Energy.</p>
+            <span class="status" id="bleStatus">Unavailable</span>
+            <div class="control-stack">
+              <button id="refreshBle" class="btn" type="button" disabled>Scan for Bluetooth devices</button>
+              <label class="field">Available devices <select id="blePorts" disabled>
+                <option value="">No device selected</option>
+              </select></label>
+              <div class="btn-row">
+                <button id="connectBle" class="btn btn-primary" type="button" disabled>Open Bluetooth transport</button>
+                <button id="disconnectBle" class="btn" type="button" disabled>Disconnect</button>
+              </div>
+            </div>
+            <p class="card-help" id="bleMessage" role="status">Bluetooth is experimental and requires a validated native adapter, which is not bundled yet. Controls stay disabled until one is installed and verified on hardware.</p>
           </article>
 
           <article class="card">
