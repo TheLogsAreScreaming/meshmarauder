@@ -35,7 +35,7 @@ document.querySelector('#exportPackets').addEventListener('click',()=>{
 const sourceFilter=document.querySelector('#packetSourceFilter');
 const filter=document.querySelector('#packetFilter');const clearPackets=document.querySelector('#clearPackets');const packetList=document.querySelector('#packetList');
 function applyFilter(){const term=filter.value.trim().toLowerCase();for(const item of packetList.querySelectorAll('.packet'))item.hidden=!item.textContent.toLowerCase().includes(term)||(sourceFilter.value!=='all'&&item.dataset.source!==sourceFilter.value);}
-filter.addEventListener('input',applyFilter);sourceFilter.addEventListener('change',applyFilter);clearPackets.addEventListener('click',()=>{packetList.replaceChildren();livePackets=0;demoPackets=0;document.querySelector('#lastLivePacket').textContent='None';refreshPacketStats();});
+filter.addEventListener('input',applyFilter);sourceFilter.addEventListener('change',applyFilter);clearPackets.addEventListener('click',()=>{if(packetList.querySelector('.packet')&&!confirm('Clear all packets from the monitor view? This cannot be undone.'))return;packetList.replaceChildren();livePackets=0;demoPackets=0;document.querySelector('#lastLivePacket').textContent='None';refreshPacketStats();});
 const connectionBanner=document.querySelector('#connectionBanner');
 const diagnosticTransport=document.querySelector('#diagnosticTransport');
 const diagnosticState=document.querySelector('#diagnosticState');

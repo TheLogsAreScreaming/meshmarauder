@@ -1,10 +1,202 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'"><title>Mesh Marauder</title><link rel="stylesheet" href="./style.css"></head><body>
-<div class="app-shell"><aside class="sidebar"><div class="brand-mark">M<span>///</span></div><div class="side-label">OPERATIONS</div><nav aria-label="Workspace"><a href="#overview" class="nav-item selected">◈ &nbsp; Overview</a><a href="#connection-center" class="nav-item">⌁ &nbsp; Connections</a><a href="#packet-monitor" class="nav-item">▤ &nbsp; Packet Monitor</a><a href="#nodes" class="nav-item">◎ &nbsp; Nodes</a><a href="#diagnostics" class="nav-item">◇ &nbsp; Diagnostics</a></nav><div class="sidebar-bottom"><span class="sidebar-dot"></span> INTEL MAC WORKSTATION <small>MESHTASTIC DESKTOP</small></div></aside><div class="workspace"><header class="top" id="overview"><div><div class="eyebrow">MESHTASTIC OPERATIONS DESKTOP</div><h1>Mesh<span class="accent-word">Marauder</span></h1><p class="sub">Intel Mac console — monitored connections, diagnostics and packet visibility.</p></div><span class="demo" id="connectionBanner" role="status" aria-live="polite">NO RADIO CONNECTED · DEMO AVAILABLE</span></header>
-<main><div class="overview-strip"><div><span>WORKSPACE</span><strong>Operations overview</strong></div><div><span>TRANSPORTS</span><strong>TCP · USB · BLE</strong></div><div><span>MONITOR</span><strong>Live / Simulated</strong></div></div><section class="panel" id="connection-center"><div class="panel-head"><div><span class="section-kicker">01 / RADIO CONTROL</span><h2>Connection Center</h2></div><label>Visual theme <select id="theme"><option value="neon">Futuristic Neons</option><option value="mocha">Mocha Mousse</option><option value="vibrant">Fun &amp; Vibrant</option><option value="dusk">Dusk</option></select></label></div><div class="cards">
-<article><h3>Wi-Fi / TCP</h3><p>Connect to a Meshtastic radio at its LAN IP, typically port 4403.</p><span class="status" id="tcpStatus">Not connected</span><div class="tcp-controls"><label>Radio IP / hostname <input id="tcpHost" placeholder="192.168.1.100" autocomplete="off"></label><label>Port <input id="tcpPort" type="number" min="1" max="65535" value="4403"></label><button id="connectTcp" type="button">Open TCP transport</button><button id="disconnectTcp" type="button">Disconnect</button></div><p id="tcpMessage" role="status">A TCP connection does not mean the Meshtastic session is ready.</p></article>
-<article><h3>Bluetooth LE</h3><p>Discover and select an authorized nearby Meshtastic device.</p><span class="status">Not connected</span></article>
-<article><h3>USB / Serial</h3><p>Discover a local serial device, then open the Meshtastic session over USB.</p><span class="status" id="usbStatus">Not connected</span><div class="tcp-controls"><button id="refreshUsb" type="button">Find serial devices</button><label>Available serial ports <select id="usbPorts"><option value="">No device selected</option></select></label><button id="connectUsb" type="button">Open USB transport</button><button id="disconnectUsb" type="button">Disconnect</button></div><p id="usbMessage" role="status">Discovery only lists devices; opening the transport runs the Meshtastic handshake.</p></article>
-</div><p class="note">Wi-Fi / TCP and USB / Serial both run the real Meshtastic configuration handshake and stream decoded packets to the monitor. Bluetooth controls are under development.</p></section>
-<section class="panel" id="packet-monitor"><div class="activity-stats" aria-label="Session packet statistics"><div><span>LIVE PACKETS</span><strong id="livePacketCount">0</strong></div><div><span>SIMULATED PACKETS</span><strong id="demoPacketCount">0</strong></div><div><span>LAST LIVE PACKET</span><strong id="lastLivePacket">None</strong></div></div><div class="panel-head"><div><span class="section-kicker">02 / TELEMETRY</span><h2>Packet Monitor</h2></div><label>Source <select id="packetSourceFilter" aria-label="Packet source"><option value="all">All packets</option><option value="live">Live only</option><option value="demo">Demo only</option></select></label><label>Filter packets <input id="packetFilter" type="search" placeholder="Node, port, LIVE, DEMO"></label><button id="exportPackets" type="button">Export visible CSV</button><button id="clearPackets" type="button">Clear</button><button id="toggleDemo" type="button">Generate demonstration packet</button></div><div id="packetList" role="log" aria-live="polite"><p class="empty">No packets yet. Demo packets are simulated and clearly labeled.</p></div></section>
-<section class="panel" id="nodes"><div class="panel-head"><div><span class="section-kicker">03 / MESH INTELLIGENCE</span><h2>Observed Nodes</h2></div><span class="status" id="nodeCount">0 observed nodes</span><button id="exportNodes" type="button">Export observed nodes CSV</button></div><p class="note">Nodes appear only after packets arrive from a live radio. Signal readings are packet observations, not a continuous link-quality measurement.</p><div id="nodeList" class="node-list" role="list"><p class="empty">No live node observations yet.</p></div></section><section class="panel" id="diagnostics"><div class="panel-head"><div><span class="section-kicker">04 / SYSTEM HEALTH</span><h2>Connection Diagnostics</h2></div></div><div class="diagnostics-grid"><div><span class="section-kicker">ACTIVE TRANSPORT</span><strong id="diagnosticTransport">TCP · standby</strong></div><div><span class="section-kicker">SESSION STATE</span><strong id="diagnosticState">Disconnected</strong></div></div><p id="diagnosticTip" class="note" role="status" aria-live="polite">Choose a radio and connect over TCP or USB.</p><p id="diagnosticError" class="diagnostic-error" role="status"></p></section></main><footer>Mesh Marauder Desktop · GPL-3.0 · Original project by Dataparty LLC</footer></div></div><script src="./renderer.js"></script></body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'">
+<title>Mesh Marauder</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<a class="skip-link" href="#overview">Skip to content</a>
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="brand-mark">
+      <span class="brand-glyph" aria-hidden="true">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M12 3v18M5 7l7 4 7-4M5 17l7-4 7 4"/></svg>
+      </span>
+      <span>Mesh<b>Marauder</b></span>
+    </div>
+    <div class="side-label">Operations</div>
+    <nav aria-label="Workspace">
+      <a href="#overview" class="nav-item selected">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span>Overview</span>
+      </a>
+      <a href="#connection-center" class="nav-item">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7H6a4 4 0 0 0 0 8h3M15 7h3a4 4 0 0 1 0 8h-3M8 11h8"/></svg>
+        <span>Connections</span>
+      </a>
+      <a href="#packet-monitor" class="nav-item">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg>
+        <span>Packet Monitor</span>
+      </a>
+      <a href="#nodes" class="nav-item">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="M8 16.5 16 8M8 18h7.5"/></svg>
+        <span>Nodes</span>
+      </a>
+      <a href="#diagnostics" class="nav-item">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h3l2 5 4-10 2 5h2M19 9a2 2 0 1 1 0 4"/></svg>
+        <span>Diagnostics</span>
+      </a>
+    </nav>
+    <div class="sidebar-bottom">
+      <span class="sidebar-dot" aria-hidden="true"></span>
+      <span>Intel Mac Workstation<small>Meshtastic Desktop</small></span>
+    </div>
+  </aside>
+
+  <div class="workspace">
+    <header class="top" id="overview">
+      <div>
+        <span class="eyebrow">Meshtastic Operations Desktop</span>
+        <h1>Mesh<span class="accent-word">Marauder</span></h1>
+        <p class="sub">Intel Mac console for monitored radio connections, live diagnostics and packet visibility.</p>
+      </div>
+      <span class="conn-banner" id="connectionBanner" role="status" aria-live="polite">NO RADIO CONNECTED · DEMO AVAILABLE</span>
+    </header>
+
+    <main>
+      <div class="overview-strip">
+        <div><span>Workspace</span><strong>Operations overview</strong></div>
+        <div><span>Transports</span><strong>TCP · USB · BLE</strong></div>
+        <div><span>Monitor</span><strong>Live / Simulated</strong></div>
+      </div>
+
+      <section class="panel" id="connection-center">
+        <div class="panel-head">
+          <div>
+            <span class="section-kicker">01 / Radio Control</span>
+            <h2>Connection Center</h2>
+          </div>
+          <div class="panel-controls">
+            <label class="control">Appearance <select id="theme">
+              <option value="neon">Midnight (dark)</option>
+              <option value="dusk">Dusk (dark)</option>
+              <option value="mocha">Graphite (dark)</option>
+              <option value="vibrant">Daylight (light)</option>
+            </select></label>
+          </div>
+        </div>
+        <div class="cards">
+
+          <article class="card">
+            <div class="card-head">
+              <span class="card-icon" aria-hidden="true"><svg class="ico-sm" viewBox="0 0 24 24"><path d="M5 13a10 10 0 0 1 14 0M8.5 16.5a5 5 0 0 1 7 0"/><circle cx="12" cy="20" r="1"/></svg></span>
+              <h3>Wi-Fi / TCP</h3>
+            </div>
+            <p class="card-desc">Connect to a Meshtastic radio at its LAN IP address, typically on port 4403.</p>
+            <span class="status" id="tcpStatus">Not connected</span>
+            <div class="control-stack">
+              <label class="field">Radio IP / hostname <input id="tcpHost" placeholder="192.168.1.100" autocomplete="off"></label>
+              <label class="field">Port <input id="tcpPort" type="number" min="1" max="65535" value="4403"></label>
+              <div class="btn-row">
+                <button id="connectTcp" class="btn btn-primary" type="button">Open TCP transport</button>
+                <button id="disconnectTcp" class="btn" type="button">Disconnect</button>
+              </div>
+            </div>
+            <p class="card-help" id="tcpMessage" role="status">A TCP connection does not mean the Meshtastic session is ready.</p>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <span class="card-icon" aria-hidden="true"><svg class="ico-sm" viewBox="0 0 24 24"><path d="M7 7l10 10-5 4V3l5 4L7 17"/></svg></span>
+              <h3>Bluetooth LE</h3>
+            </div>
+            <p class="card-desc">Discover and select an authorized nearby Meshtastic device.</p>
+            <span class="status">Not connected</span>
+            <p class="card-help">Bluetooth support is under active development and is not yet available.</p>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <span class="card-icon" aria-hidden="true"><svg class="ico-sm" viewBox="0 0 24 24"><path d="M12 2v10M9 5l3-3 3 3M8 12h8v4a4 4 0 0 1-8 0zM12 20v2"/></svg></span>
+              <h3>USB / Serial</h3>
+            </div>
+            <p class="card-desc">Discover a local serial device, then open the Meshtastic session over USB.</p>
+            <span class="status" id="usbStatus">Not connected</span>
+            <div class="control-stack">
+              <button id="refreshUsb" class="btn" type="button">Find serial devices</button>
+              <label class="field">Available serial ports <select id="usbPorts">
+                <option value="">No device selected</option>
+              </select></label>
+              <div class="btn-row">
+                <button id="connectUsb" class="btn btn-primary" type="button">Open USB transport</button>
+                <button id="disconnectUsb" class="btn" type="button">Disconnect</button>
+              </div>
+            </div>
+            <p class="card-help" id="usbMessage" role="status">Discovery only lists devices; opening the transport runs the Meshtastic handshake.</p>
+          </article>
+
+        </div>
+        <p class="note">Wi-Fi / TCP and USB / Serial both run the real Meshtastic configuration handshake and stream decoded packets to the monitor. Bluetooth controls are under development.</p>
+      </section>
+
+      <section class="panel" id="packet-monitor">
+        <div class="activity-stats" aria-label="Session packet statistics">
+          <div><span>Live packets</span><strong id="livePacketCount">0</strong></div>
+          <div><span>Simulated packets</span><strong id="demoPacketCount">0</strong></div>
+          <div><span>Last live packet</span><strong id="lastLivePacket">None</strong></div>
+        </div>
+        <div class="panel-head">
+          <div>
+            <span class="section-kicker">02 / Telemetry</span>
+            <h2>Packet Monitor</h2>
+          </div>
+          <div class="panel-controls">
+            <label class="control">Source <select id="packetSourceFilter" aria-label="Packet source">
+              <option value="all">All packets</option>
+              <option value="live">Live only</option>
+              <option value="demo">Demo only</option>
+            </select></label>
+            <label class="control control--search">Filter <input id="packetFilter" type="search" placeholder="Node, port, LIVE, DEMO"></label>
+            <button id="exportPackets" class="btn" type="button">Export CSV</button>
+            <button id="clearPackets" class="btn btn-danger" type="button">Clear</button>
+            <button id="toggleDemo" class="btn btn-ghost" type="button">Generate demo packet</button>
+          </div>
+        </div>
+        <div id="packetList" role="log" aria-live="polite">
+          <p class="empty">No packets yet. Demo packets are simulated and clearly labeled.</p>
+        </div>
+      </section>
+
+      <section class="panel" id="nodes">
+        <div class="panel-head">
+          <div>
+            <span class="section-kicker">03 / Mesh Intelligence</span>
+            <h2>Observed Nodes</h2>
+          </div>
+          <div class="panel-controls">
+            <span class="status" id="nodeCount">0 observed nodes</span>
+            <button id="exportNodes" class="btn" type="button">Export nodes CSV</button>
+          </div>
+        </div>
+        <p class="note">Nodes appear only after packets arrive from a live radio. Signal readings are packet observations, not a continuous link-quality measurement.</p>
+        <div id="nodeList" class="node-list" role="list">
+          <p class="empty">No live node observations yet.</p>
+        </div>
+      </section>
+
+      <section class="panel" id="diagnostics">
+        <div class="panel-head">
+          <div>
+            <span class="section-kicker">04 / System Health</span>
+            <h2>Connection Diagnostics</h2>
+          </div>
+        </div>
+        <div class="diagnostics-grid">
+          <div><span class="section-kicker">Active Transport</span><strong id="diagnosticTransport">TCP · standby</strong></div>
+          <div><span class="section-kicker">Session State</span><strong id="diagnosticState">Disconnected</strong></div>
+        </div>
+        <p id="diagnosticTip" class="note" role="status" aria-live="polite">Choose a radio and connect over TCP or USB.</p>
+        <p id="diagnosticError" class="diagnostic-error" role="status"></p>
+      </section>
+
+      <footer>Mesh Marauder Desktop · GPL-3.0 · Original project by Dataparty LLC</footer>
+    </main>
+  </div>
+</div>
+<script src="./renderer.js"></script>
+</body>
+</html>
