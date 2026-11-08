@@ -32,6 +32,8 @@
       "packet-monitor.cjs",
       "connection-diagnostics.cjs",
       "ble-transport.cjs",
+      "ble-adapter.cjs",
+      "transport-capabilities.cjs",
       "connection-retry.cjs"
     ],
     "mac": {

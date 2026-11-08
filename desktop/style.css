@@ -566,6 +566,19 @@ article.card:hover { border-color: var(--border-strong); }
   display: grid; place-items: center;
 }
 .card h3 { font-size: var(--fs-md); font-weight: var(--weight-semibold); }
+.badge {
+  margin-left: auto;
+  align-self: flex-start;
+  font-size: var(--fs-2xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--warning);
+  background: var(--warning-wash);
+  border: 1px solid var(--warning-line);
+  border-radius: var(--r-pill);
+  padding: 2px var(--sp-2);
+}
 .card-desc { font-size: var(--fs-sm); color: var(--text-muted); min-height: 2.6em; }
 .card--soon { opacity: 0.92; }
 

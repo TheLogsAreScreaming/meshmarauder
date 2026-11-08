@@ -46,7 +46,7 @@ function updateDiagnostics(state){diagnosticTransport.textContent=activeTranspor
 
 function updateBanner(state){
  const labels={'disconnected':'NO RADIO CONNECTED · DEMO AVAILABLE','connecting':'CONNECTING TO RADIO','transport-open':'TCP OPEN · HANDSHAKE PENDING','initializing':'TCP OPEN · HANDSHAKE PENDING','session-ready':'LIVE RADIO · SESSION READY'};
- const transportName=activeTransport==='usb'?'USB':'TCP';
+ const transportName=activeTransport==='ble'?'BLE':activeTransport==='usb'?'USB':'TCP';
  connectionBanner.textContent=(state==='transport-open'||state==='initializing')?transportName+' OPEN · HANDSHAKE PENDING':labels[state]||'RADIO NEEDS ATTENTION';
  connectionBanner.dataset.connectionState=state;
  updateDiagnostics(state);
@@ -61,6 +61,12 @@ const usbStatus=document.querySelector('#usbStatus');
 const usbMessage=document.querySelector('#usbMessage');
 const usbConnect=document.querySelector('#connectUsb');
 const usbDisconnect=document.querySelector('#disconnectUsb');
+const bleRefresh=document.querySelector('#refreshBle');
+const blePorts=document.querySelector('#blePorts');
+const bleStatus=document.querySelector('#bleStatus');
+const bleMessage=document.querySelector('#bleMessage');
+const bleConnect=document.querySelector('#connectBle');
+const bleDisconnect=document.querySelector('#disconnectBle');
 // One transport is active at a time; remember which so the shared session,
 // error and byte events update the right card.
 let activeTransport='tcp';
@@ -69,15 +75,17 @@ if(window.marauder?.connectTcp){
   if(transport&&state!=='disconnected')activeTransport=transport;
   updateBanner(state);
   if(transport==='usb'){usbStatus.textContent=state==='transport-open'?'Serial port open — handshake pending':state.replace(/-/g,' ');usbConnect.disabled=state==='connecting'||state==='transport-open';if(state==='disconnected'){usbConnect.disabled=false;usbMessage.textContent='Radio disconnected. Reconnect when ready.';}}
+  else if(transport==='ble'){bleStatus.textContent=state==='transport-open'?'Bluetooth link open — handshake pending':state.replace(/-/g,' ');bleConnect.disabled=state==='connecting'||state==='transport-open';if(state==='disconnected'){bleConnect.disabled=false;bleMessage.textContent='Bluetooth radio disconnected. Reconnect when ready.';}}
   else{tcpStatus.textContent=state==='transport-open'?'TCP socket open — handshake pending':state.replace(/-/g,' ');tcpConnect.disabled=state==='connecting'||state==='transport-open';if(state==='disconnected'){tcpConnect.disabled=false;tcpMessage.textContent='Radio disconnected. Reconnect when ready.';}}
  });
- window.marauder.onError(message=>{(activeTransport==='usb'?usbMessage:tcpMessage).textContent='Radio error: '+message;diagnosticError.textContent=String(message).slice(0,300);updateBanner('needs-attention');});
- window.marauder.onBytes(({count})=>{(activeTransport==='usb'?usbMessage:tcpMessage).textContent='Received '+count+' transport bytes; awaiting Meshtastic configuration handshake.';});
+ const activeMessageEl=()=>activeTransport==='ble'?bleMessage:activeTransport==='usb'?usbMessage:tcpMessage;
+ window.marauder.onError(message=>{activeMessageEl().textContent='Radio error: '+message;diagnosticError.textContent=String(message).slice(0,300);updateBanner('needs-attention');});
+ window.marauder.onBytes(({count})=>{activeMessageEl().textContent='Received '+count+' transport bytes; awaiting Meshtastic configuration handshake.';});
  window.marauder.onSession?.(({state})=>{updateBanner(state);
-  const statusEl=activeTransport==='usb'?usbStatus:tcpStatus;
+  const statusEl=activeTransport==='ble'?bleStatus:activeTransport==='usb'?usbStatus:tcpStatus;
   if(state==='initializing')statusEl.textContent='Transport open — Meshtastic handshake in progress';
   else if(state==='session-ready')statusEl.textContent='Session ready — decoding live packets';
-  else if(state==='disconnected'){statusEl.textContent='Not connected';tcpConnect.disabled=false;usbConnect.disabled=false;}
+  else if(state==='disconnected'){statusEl.textContent='Not connected';tcpConnect.disabled=false;usbConnect.disabled=false;bleConnect.disabled=false;}
   else statusEl.textContent=state.replace(/-/g,' ');
  });
  window.marauder.onPacket?.(packet=>{
@@ -123,6 +131,43 @@ if(window.marauder?.connectTcp){
   catch(error){updateBanner('needs-attention');diagnosticError.textContent=String(error.message).slice(0,300);usbMessage.textContent='Connection failed: '+String(error.message).slice(0,300);usbConnect.disabled=false;}
  });
  usbDisconnect.addEventListener('click',async()=>{try{await window.marauder.disconnect();usbStatus.textContent='Not connected';updateBanner('disconnected');usbMessage.textContent='Disconnected';usbConnect.disabled=false;}catch(error){usbMessage.textContent='Disconnect error: '+String(error.message).slice(0,300);}});
+ // Bluetooth is experimental. The controls stay disabled until the main process
+ // reports a validated native adapter (capabilities().bluetooth.available); none
+ // is bundled, so in the shipped app this keeps the card honestly unavailable.
+ if(window.marauder.getCapabilities){
+  window.marauder.getCapabilities().then(caps=>{
+   const ble=caps&&caps.bluetooth;
+   if(ble&&ble.available){
+    if(bleRefresh)bleRefresh.disabled=false;
+    bleStatus.textContent='Adapter ready — not connected';
+    bleMessage.textContent='Scan for a nearby Meshtastic device, then open the Bluetooth transport.';
+   }else{
+    bleStatus.textContent='Unavailable';
+    bleMessage.textContent=(ble&&ble.reason?ble.reason:'Bluetooth adapter not installed')+'. Bluetooth stays disabled until a validated native adapter is installed and verified on hardware.';
+   }
+  }).catch(()=>{});
+ }
+ if(window.marauder.connectBle&&bleRefresh){
+  bleRefresh.addEventListener('click',async()=>{
+   bleRefresh.disabled=true;bleStatus.textContent='Scanning for Bluetooth devices…';blePorts.replaceChildren();
+   try{
+    const devices=await window.marauder.listBle();
+    const empty=document.createElement('option');empty.value='';empty.textContent='Select a device';blePorts.append(empty);
+    for(const device of devices){const option=document.createElement('option');option.value=device.id;option.textContent=(device.name?device.name+' · ':'')+device.id;blePorts.append(option);}
+    blePorts.disabled=false;bleStatus.textContent=devices.length+' Bluetooth device(s) found · Not connected';
+   }catch(error){bleStatus.textContent='Unavailable';bleMessage.textContent='Bluetooth discovery failed: '+String(error.message).slice(0,160);}
+   finally{bleRefresh.disabled=false;}
+  });
+  blePorts.addEventListener('change',()=>{bleConnect.disabled=!blePorts.value;});
+  bleConnect.addEventListener('click',async()=>{
+   const id=blePorts.value;
+   if(!id){bleMessage.textContent='Scan and select a Bluetooth device first.';return;}
+   bleConnect.disabled=true;bleMessage.textContent='Opening Bluetooth transport…';
+   try{const result=await window.marauder.connectBle({id});bleMessage.textContent=result.note;}
+   catch(error){updateBanner('needs-attention');diagnosticError.textContent=String(error.message).slice(0,300);bleMessage.textContent='Connection failed: '+String(error.message).slice(0,300);bleConnect.disabled=false;}
+  });
+  bleDisconnect.addEventListener('click',async()=>{try{await window.marauder.disconnect();bleStatus.textContent='Not connected';updateBanner('disconnected');bleMessage.textContent='Disconnected';bleConnect.disabled=false;}catch(error){bleMessage.textContent='Disconnect error: '+String(error.message).slice(0,300);}});
+ }
 }
 
 // Keep workspace navigation synchronized with the visible section.
