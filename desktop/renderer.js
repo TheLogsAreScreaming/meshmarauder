@@ -4,6 +4,19 @@ const options=['neon','mocha','vibrant','dusk'];
 function setTheme(value){const safe=options.includes(value)?value:'neon';document.body.dataset.theme=safe;theme.value=safe;localStorage.setItem('meshMarauder.theme',safe);}
 setTheme(savedTheme);
 theme.addEventListener('change',()=>setTheme(theme.value));
+// Remember the last TCP host/port locally so a reconnect doesn't require
+// retyping them. These only pre-fill the inputs; connecting stays a manual,
+// explicit action and the main process still validates the values.
+function restoreTcpPrefs(){
+ try{
+  const host=localStorage.getItem('meshMarauder.tcpHost');if(host)document.querySelector('#tcpHost').value=host;
+  const port=localStorage.getItem('meshMarauder.tcpPort');if(port)document.querySelector('#tcpPort').value=port;
+ }catch{/* storage unavailable (private mode / blocked) — inputs keep defaults */}
+}
+function saveTcpPrefs(host,port){
+ try{localStorage.setItem('meshMarauder.tcpHost',String(host));localStorage.setItem('meshMarauder.tcpPort',String(port));}catch{/* ignore storage failures */}
+}
+restoreTcpPrefs();
 let livePackets=0,demoPackets=0;
 function refreshPacketStats(){document.querySelector('#livePacketCount').textContent=String(livePackets);document.querySelector('#demoPacketCount').textContent=String(demoPackets);}
 document.querySelector('#toggleDemo').addEventListener('click',()=>{
@@ -87,7 +100,8 @@ if(window.marauder?.connectTcp){
  });
  tcpConnect.addEventListener('click',async()=>{
   tcpConnect.disabled=true;tcpMessage.textContent='Opening TCP socket…';
-  try{const result=await window.marauder.connectTcp({host:document.querySelector('#tcpHost').value,port:Number(document.querySelector('#tcpPort').value)});tcpMessage.textContent=result.note;}
+  const host=document.querySelector('#tcpHost').value;const port=Number(document.querySelector('#tcpPort').value);
+  try{const result=await window.marauder.connectTcp({host,port});saveTcpPrefs(host,port);tcpMessage.textContent=result.note;}
   catch(error){updateBanner('needs-attention');diagnosticError.textContent=String(error.message).slice(0,300);tcpMessage.textContent='Connection failed: '+String(error.message).slice(0,300);tcpConnect.disabled=false;}
  });
  tcpDisconnect.addEventListener('click',async()=>{try{await window.marauder.disconnect();tcpStatus.textContent='Not connected';updateBanner('disconnected');tcpMessage.textContent='Disconnected';tcpConnect.disabled=false;}catch(error){tcpMessage.textContent='Disconnect error: '+String(error.message).slice(0,300);}});
