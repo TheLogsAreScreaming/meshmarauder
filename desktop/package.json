@@ -31,7 +31,8 @@
       "meshtastic-codec.cjs",
       "packet-monitor.cjs",
       "connection-diagnostics.cjs",
-      "ble-transport.cjs"
+      "ble-transport.cjs",
+      "connection-retry.cjs"
     ],
     "mac": {
       "category": "public.app-category.utilities",

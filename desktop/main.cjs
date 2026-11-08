@@ -5,6 +5,7 @@ const {UsbTransport}=require('./usb-transport.cjs');
 const {validateTcpOptions,validateUsbOptions}=require('./radio-input.cjs');
 const {MeshtasticSession}=require('./meshtastic-session.cjs');
 const {createMeshtasticCodec}=require('./meshtastic-codec.cjs');
+const {connectWithRetry}=require('./connection-retry.cjs');
 let transport=null;
 let session=null;
 function teardown(){if(session){session.close();session=null;}if(transport){transport.disconnect();transport=null;}}
@@ -19,12 +20,17 @@ ipcMain.handle('radio:tcp-connect',async(event,options)=>{
  if(transport)throw new Error('Disconnect the existing radio transport first');
  const safe=validateTcpOptions(options);
  const next=new TcpTransport({timeoutMs:10000});
+ transport=next;
+ if(!win.isDestroyed())win.webContents.send('radio:status',{transport:'tcp',state:'connecting'});
+ // Retry only this user-initiated connect on transient failures (radio still
+ // booting, a momentary network blip) before giving up. Listeners are attached
+ // after the socket opens so intermediate retry drops don't clear state.
+ try{await connectWithRetry(()=>next.connect(safe),{attempts:3});}
+ catch(error){next.disconnect();if(transport===next)transport=null;throw new Error(String(error.message).slice(0,300));}
  next.on('status',state=>{if(!win.isDestroyed())win.webContents.send('radio:status',{transport:'tcp',state});if(state==='disconnected'&&transport===next){if(session){session.close();session=null;}transport=null;}});
  next.on('error',error=>{if(!win.isDestroyed())win.webContents.send('radio:error',String(error.message).slice(0,300));});
  next.on('data',bytes=>{if(!win.isDestroyed())win.webContents.send('radio:bytes',{count:bytes.length});});
- transport=next;
- try{await next.connect(safe);}
- catch(error){next.disconnect();if(transport===next)transport=null;throw new Error(String(error.message).slice(0,300));}
+ if(!win.isDestroyed())win.webContents.send('radio:status',{transport:'tcp',state:'transport-open'});
  // Socket is open; run the real Meshtastic configuration handshake before
  // claiming a session, and stream decoded FromRadio packets to the renderer.
  try{
@@ -50,12 +56,17 @@ ipcMain.handle('radio:usb-connect',async(event,options)=>{
  if(transport)throw new Error('Disconnect the existing radio transport first');
  const safe=validateUsbOptions(options);
  const next=new UsbTransport({timeoutMs:10000});
+ transport=next;
+ if(!win.isDestroyed())win.webContents.send('radio:status',{transport:'usb',state:'connecting'});
+ // Retry only this user-initiated connect on transient failures (port briefly
+ // busy right after plug-in) before giving up. Listeners are attached after the
+ // port opens so intermediate retry drops don't clear state.
+ try{await connectWithRetry(()=>next.connect(safe),{attempts:3});}
+ catch(error){next.disconnect();if(transport===next)transport=null;throw new Error(String(error.message).slice(0,300));}
  next.on('status',state=>{if(!win.isDestroyed())win.webContents.send('radio:status',{transport:'usb',state});if(state==='disconnected'&&transport===next){if(session){session.close();session=null;}transport=null;}});
  next.on('error',error=>{if(!win.isDestroyed())win.webContents.send('radio:error',String(error.message).slice(0,300));});
  next.on('data',bytes=>{if(!win.isDestroyed())win.webContents.send('radio:bytes',{count:bytes.length});});
- transport=next;
- try{await next.connect(safe);}
- catch(error){next.disconnect();if(transport===next)transport=null;throw new Error(String(error.message).slice(0,300));}
+ if(!win.isDestroyed())win.webContents.send('radio:status',{transport:'usb',state:'transport-open'});
  // Serial port is open; run the same Meshtastic configuration handshake used
  // for TCP before claiming a session, and stream decoded packets.
  try{
