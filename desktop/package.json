@@ -34,7 +34,10 @@
       "ble-transport.cjs",
       "ble-adapter.cjs",
       "transport-capabilities.cjs",
-      "connection-retry.cjs"
+      "connection-retry.cjs",
+      "integrations.cjs",
+      "integrations-paths.cjs",
+      "assistant-mcp.cjs"
     ],
     "mac": {
       "category": "public.app-category.utilities",

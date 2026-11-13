@@ -63,6 +63,21 @@ jobs:
           assert list(Path('dist').glob('*.dmg'))
           assert list(Path('dist').glob('*.zip'))
           PY
+      - name: Smoke test assistant link (MCP stdio) in the packaged app
+        shell: bash
+        run: |
+          APP=$(ls -d dist/mac*/"Mesh Marauder.app" | head -1)
+          export MESH_MARAUDER_INTEGRATIONS_DIR="$RUNNER_TEMP/mm-integrations"
+          printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"list_nodes","arguments":{}}}' \
+            | ELECTRON_RUN_AS_NODE=1 "$APP/Contents/MacOS/Mesh Marauder" "$APP/Contents/Resources/app.asar/assistant-mcp.cjs" | tee mcp.log
+          grep -q '"serverInfo"' mcp.log
+          grep -q '"node_telemetry"' mcp.log
+          ! grep -q '"send_message"' mcp.log
+          grep -q 'assistant link is off' mcp.log
       - name: Capture desktop screenshot (best effort)
         continue-on-error: true
         run: npx electron capture-screenshot.cjs

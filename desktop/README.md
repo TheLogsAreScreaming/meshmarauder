@@ -2,6 +2,10 @@
 
 The desktop application is a new, isolated interface for **authorized Meshtastic radio monitoring**. It builds on the upstream GPL-3.0 codebase while preserving the original command-line tools and copyright notices.
 
+## Integrations (optional, off by default)
+
+Webhooks for node / message-activity / telemetry events, a read-only assistant link for Claude (MCP), Prometheus `/metrics`, InfluxDB line protocol and a Grafana dashboard. Message text is never decoded and nothing is transmitted. See [INTEGRATIONS.md](INTEGRATIONS.md).
+
 ## Targets
 - Intel x86_64 macOS Tahoe 26.7.1, click-to-open Electron app in DMG and ZIP
 - Wi-Fi/TCP, BLE, and USB/serial transports with Meshtastic session checks
